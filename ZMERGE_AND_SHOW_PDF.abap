@@ -187,6 +187,14 @@ CLASS lcl_html_viewer IMPLEMENTATION.
 	
 	"Merge documents
     lo_pdf_merger->merge_documents( IMPORTING merged_document = lcl_html_viewer=>mv_pdf_data ).
+	
+	"Send merged doc to spool
+    send_pdf_to_spool(
+      EXPORTING
+        is_outputdocparams = ls_outputparams
+        is_sfpjoboutput    = ls_sfpjoboutput
+     ).
+
 
     "SHOW PDF
     CALL SCREEN 0500.
