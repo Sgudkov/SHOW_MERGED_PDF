@@ -9,7 +9,11 @@ CLASS lcl_html_viewer DEFINITION.
     CLASS-METHODS:
       pbo,
 	  print,
-      pdf_show.
+      pdf_show,
+      send_pdf_to_spool
+        IMPORTING
+          is_outputdocparams TYPE sfpoutputparams
+          is_sfpjoboutput    TYPE sfpjoboutput.
 
 ENDCLASS.
 
@@ -189,4 +193,58 @@ CLASS lcl_html_viewer IMPLEMENTATION.
 
   ENDMETHOD.
 
+ METHOD send_pdf_to_spool.
+
+    DATA: size       TYPE i,
+          total_size TYPE i,
+          spoolid    TYPE rspoid,
+          copies     TYPE rspocopies,
+          lifetime,
+          pages      TYPE fppagecount.
+
+    size = xstrlen( lcl_html_viewer=>mv_pdf_data ).
+    ADD size TO total_size.
+
+    pages = is_sfpjoboutput-remaining_pages.
+
+    DATA(ls_outputparams) = is_outputdocparams.
+
+    copies = ls_outputparams-copies.
+    lifetime = ls_outputparams-lifetime.
+
+    CALL FUNCTION 'ADS_CREATE_PDF_SPOOLJOB'
+      EXPORTING
+        dest              = ls_outputparams-dest
+        pages             = pages
+        pdf_data          = lcl_html_viewer=>mv_pdf_data
+        name              = ls_outputparams-dataset
+        suffix1           = ls_outputparams-suffix1
+        suffix2           = ls_outputparams-suffix2
+        copies            = copies
+        immediate_print   = ls_outputparams-reqimm
+        auto_delete       = ls_outputparams-reqdel
+        titleline         = ls_outputparams-covtitle
+        receiver          = ls_outputparams-receiver
+        division          = ls_outputparams-division
+        authority         = ls_outputparams-authority
+        lifetime          = lifetime
+      IMPORTING
+        spoolid           = spoolid
+      EXCEPTIONS
+        no_data           = 1
+        not_pdf           = 2
+        wrong_devtype     = 3
+        operation_failed  = 4
+        cannot_write_file = 5
+        device_missing    = 6
+        no_such_device    = 7
+        OTHERS            = 8.
+    IF sy-subrc <> 0.
+      MESSAGE ID sy-msgid TYPE sy-msgty NUMBER sy-msgno
+          WITH sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4.
+    ENDIF.
+
+
+  ENDMETHOD.
+  
 ENDCLASS.
